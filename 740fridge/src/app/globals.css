@@ -50,6 +50,5 @@ body {
   box-shadow: var(--photo-shadow);
 }
 
-.magnet {
-  box-shadow: var(--magnet-shadow);
-}
+/* Magnets use CSS filter drop-shadow (not box-shadow) so PNG transparency
+   doesn't create a visible square outline behind the magnet. */
