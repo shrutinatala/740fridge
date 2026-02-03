@@ -28,8 +28,17 @@ function MagnetShell({
 export function CircleMagnet({ className, style }: MagnetProps) {
   return (
     <MagnetShell className={className} style={style}>
-      <div className="h-10 w-10 rounded-full bg-gradient-to-b from-white/60 to-white/0 p-[2px]">
-        <div className="h-full w-full rounded-full bg-[color:var(--circle)] shadow-inner" />
+      <div className="h-10 w-10 rounded-full bg-gradient-to-b from-white/70 to-white/20 p-[2px] shadow-sm">
+        <div
+          className="h-full w-full rounded-full shadow-inner"
+          style={{
+            background: `
+              radial-gradient(circle at 35% 30%, rgba(255,255,255,0.7) 0%, transparent 50%),
+              radial-gradient(circle at 70% 70%, rgba(0,0,0,0.15) 0%, transparent 45%),
+              var(--circle)
+            `,
+          }}
+        />
       </div>
     </MagnetShell>
   );

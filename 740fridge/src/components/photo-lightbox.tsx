@@ -152,11 +152,9 @@ export function PhotoLightbox({
             <p className="font-medium text-zinc-900">{photo.name}</p>
           ) : null}
           {photo.note ? (
-            <p className="mt-1 text-sm text-zinc-600 italic">
-              &ldquo;{photo.note}&rdquo;
-            </p>
+            <p className="mt-1 text-xs text-zinc-600 italic">{photo.note}</p>
           ) : null}
-          <p className="mt-2 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-zinc-500">
             {formatUploadDate(photo.uploadedAtMs)}
           </p>
         </div>
