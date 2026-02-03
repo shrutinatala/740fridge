@@ -7,16 +7,23 @@ const APP_PASSWORD = "4foot2inch";
 
 interface PasswordGateProps {
   children: React.ReactNode;
+  /** When false, never remember auth — password is required every time (e.g. for the fridge). */
+  persistAuth?: boolean;
 }
 
-export function PasswordGate({ children }: PasswordGateProps) {
+export function PasswordGate({
+  children,
+  persistAuth = true,
+}: PasswordGateProps) {
   const [password, setPassword] = React.useState("");
   const [hasAccess, setHasAccess] = React.useState(false);
   const [hasTried, setHasTried] = React.useState(false);
 
   React.useEffect(() => {
-    setHasAccess(window.localStorage.getItem(STORAGE_KEY) === "true");
-  }, []);
+    if (persistAuth) {
+      setHasAccess(window.localStorage.getItem(STORAGE_KEY) === "true");
+    }
+  }, [persistAuth]);
 
   function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -24,7 +31,9 @@ export function PasswordGate({ children }: PasswordGateProps) {
 
     if (password !== APP_PASSWORD) return;
 
-    window.localStorage.setItem(STORAGE_KEY, "true");
+    if (persistAuth) {
+      window.localStorage.setItem(STORAGE_KEY, "true");
+    }
     setHasAccess(true);
   }
 

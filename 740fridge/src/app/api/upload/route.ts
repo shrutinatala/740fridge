@@ -2,6 +2,7 @@ import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { z } from "zod";
+import { savePhotoMetadata } from "@/lib/blob";
 
 export const runtime = "nodejs";
 
@@ -38,6 +39,8 @@ export async function POST(request: Request) {
 
     const formData = await request.formData();
     const file = formData.get("file");
+    const name = (formData.get("name") as string | null)?.trim() || undefined;
+    const note = (formData.get("note") as string | null)?.trim() || undefined;
 
     if (!(file instanceof File))
       return NextResponse.json(
@@ -78,6 +81,10 @@ export async function POST(request: Request) {
       contentType: "image/webp",
       addRandomSuffix: false,
     });
+
+    if (name !== undefined || note !== undefined) {
+      await savePhotoMetadata({ key: blob.pathname, name, note });
+    }
 
     return NextResponse.json({ ok: true, url: blob.url, key: blob.pathname });
   } catch (error) {

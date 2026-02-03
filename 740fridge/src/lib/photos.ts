@@ -2,6 +2,8 @@ export interface FridgePhoto {
   key: string;
   url: string;
   uploadedAtMs: number;
+  name?: string;
+  note?: string;
 }
 
 export function parseUploadedAtMsFromKey(key: string) {

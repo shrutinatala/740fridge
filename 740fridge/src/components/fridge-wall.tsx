@@ -5,7 +5,8 @@ import * as React from "react";
 import type { CSSProperties } from "react";
 import { createSeededRandom, pickOne } from "@/lib/random";
 import type { FridgePhoto } from "@/lib/photos";
-import { CircleMagnet } from "@/components/magnets";
+import { CircleMagnet, StarMagnet } from "@/components/magnets";
+import { PhotoLightbox } from "@/components/photo-lightbox";
 
 interface FridgeWallProps {
   photos: FridgePhoto[];
@@ -67,6 +68,7 @@ export function FridgeWall({ photos }: FridgeWallProps) {
     () => computeGridPlacement(buildPrints(photos)),
     [photos]
   );
+  const [lightboxIndex, setLightboxIndex] = React.useState<number | null>(null);
 
   return (
     <div className="min-h-dvh bg-[var(--background)] px-3 py-4 sm:px-6 sm:py-10">
@@ -95,7 +97,7 @@ export function FridgeWall({ photos }: FridgeWallProps) {
           </header>
 
           <div className="relative px-4 pb-10 pt-6 sm:px-7">
-            <div className="relative grid grid-cols-2 gap-5 sm:grid-cols-3 sm:gap-7">
+            <div className="relative grid grid-cols-2 gap-5 sm:grid-cols-3 sm:gap-7 items-center">
               {prints.length === 0 ? (
                 <div className="col-span-2 sm:col-span-3 rounded-2xl border border-dashed border-zinc-200 bg-white/60 p-10 text-center text-zinc-600">
                   No photos yet. Add the first one from{" "}
@@ -106,12 +108,12 @@ export function FridgeWall({ photos }: FridgeWallProps) {
                 </div>
               ) : null}
 
-              {prints.map((print) => {
+              {prints.map((print, printIndex) => {
                 const random = createSeededRandom(print.id);
                 const lift = 1 - Math.min(1, (print.row ?? 0) / 14);
                 const driftY = (1 - lift) * (16 + random() * 12);
 
-                const magnetKind = "circle";
+                const magnetKind = pickOne(random, ["circle", "star"] as const);
                 const edge = pickOne(random, ["top", "left", "right"] as const);
 
                 // Sit on the top, left, or right edge of the photo with a bit
@@ -143,13 +145,23 @@ export function FridgeWall({ photos }: FridgeWallProps) {
                 return (
                   <div
                     key={print.id}
-                    className="relative"
+                    className="relative cursor-pointer"
                     style={{
                       transform: `translate(${print.shiftX}px, ${
                         print.shiftY + driftY
                       }px) rotate(${print.rotateDeg}deg)`,
                       zIndex: print.z,
                     }}
+                    onClick={() => setLightboxIndex(printIndex)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setLightboxIndex(printIndex);
+                      }
+                    }}
+                    aria-label="View photo"
                   >
                     <div className="relative">
                       <Image
@@ -178,6 +190,9 @@ export function FridgeWall({ photos }: FridgeWallProps) {
                           }
                         />
                       )}
+                      {magnetKind === "star" && (
+                        <StarMagnet style={baseMagnetStyle} />
+                      )}
                     </div>
                   </div>
                 );
@@ -191,6 +206,14 @@ export function FridgeWall({ photos }: FridgeWallProps) {
           <span className="font-mono text-zinc-700">/upload</span> for guests.
         </div>
       </div>
+
+      {lightboxIndex !== null && (
+        <PhotoLightbox
+          photos={photos}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
     </div>
   );
 }

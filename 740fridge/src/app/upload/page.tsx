@@ -1,26 +1,32 @@
 "use client";
 
 import * as React from "react";
+import { PasswordGate } from "@/components/password-gate";
 
 type UploadState =
   | { kind: "idle" }
   | { kind: "uploading" }
-  | { kind: "success" }
+  | { kind: "success"; name: string; note?: string }
   | { kind: "error"; message: string };
 
 export default function UploadPage() {
   const [state, setState] = React.useState<UploadState>({ kind: "idle" });
   const [file, setFile] = React.useState<File | null>(null);
+  const [name, setName] = React.useState("");
+  const [note, setNote] = React.useState("");
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!file) return;
+    const trimmedName = name.trim();
+    if (!trimmedName || !file) return;
 
     setState({ kind: "uploading" });
 
     try {
       const formData = new FormData();
       formData.set("file", file);
+      formData.set("name", trimmedName);
+      if (note.trim()) formData.set("note", note.trim());
 
       const response = await fetch("/api/upload", {
         method: "POST",
@@ -34,7 +40,11 @@ export default function UploadPage() {
       if (!response.ok || !data.ok)
         throw new Error("error" in data ? data.error : "Upload failed");
 
-      setState({ kind: "success" });
+      setState({
+        kind: "success",
+        name: trimmedName,
+        note: note.trim() || undefined,
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload failed";
       setState({ kind: "error", message });
@@ -52,14 +62,21 @@ export default function UploadPage() {
             Your photo is on the fridge 🧲
           </h1>
           <p className="mt-2 text-sm text-zinc-600">
-            Thanks for leaving a little memory behind.
+            Thanks for leaving a little memory behind, {state.name}.
           </p>
+          {state.note ? (
+            <p className="mt-2 text-sm text-zinc-500 italic">
+              &ldquo;{state.note}&rdquo;
+            </p>
+          ) : null}
 
           <div className="mt-6 grid grid-cols-2 gap-3">
             <button
               className="h-11 rounded-xl border border-zinc-200 bg-white/70 font-medium text-zinc-900 hover:bg-white"
               onClick={() => {
                 setFile(null);
+                setName("");
+                setNote("");
                 setState({ kind: "idle" });
               }}
             >
@@ -78,59 +95,89 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-[var(--background)] px-4 py-6">
-      <div className="mx-auto w-full max-w-md">
-        <div className="fridge-frame fridge-surface p-6">
-          <div className="text-xs font-semibold tracking-[0.22em] text-zinc-500">
-            740FRIDGE
-          </div>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-            Add a photo to the fridge
-          </h1>
-          <p className="mt-2 text-sm text-zinc-600">
-            Take a photo in the apartment or upload one from your camera roll.
-          </p>
-
-          <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
-            <div className="rounded-2xl border border-zinc-200 bg-white/65 p-4">
-              <label className="text-sm font-medium text-zinc-800">
-                Photo
-                <input
-                  className="mt-2 block w-full text-sm file:mr-4 file:rounded-xl file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-white file:font-medium"
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-                />
-              </label>
-              <div className="mt-2 text-xs text-zinc-500">
-                Tip: on iPhone, this will prompt Camera or Photo Library.
-              </div>
+    <PasswordGate>
+      <div className="min-h-dvh bg-[var(--background)] px-4 py-6">
+        <div className="mx-auto w-full max-w-md">
+          <div className="fridge-frame fridge-surface p-6">
+            <div className="text-xs font-semibold tracking-[0.22em] text-zinc-500">
+              740FRIDGE
             </div>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+              Add a photo to the fridge
+            </h1>
+            <p className="mt-2 text-sm text-zinc-600">
+              Take a photo in the apartment or upload one from your camera roll.
+            </p>
 
-            {state.kind === "error" ? (
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {state.message}
+            <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
+              <div className="rounded-2xl border border-zinc-200 bg-white/65 p-4">
+                <label className="text-sm font-medium text-zinc-800">
+                  Your name *
+                  <input
+                    type="text"
+                    required
+                    autoComplete="name"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    placeholder="e.g. Amrita"
+                    className="mt-2 block w-full rounded-xl border border-zinc-200 bg-white/70 px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-zinc-900/15"
+                  />
+                </label>
               </div>
-            ) : null}
+              <div className="rounded-2xl border border-zinc-200 bg-white/65 p-4">
+                <label className="text-sm font-medium text-zinc-800">
+                  Photo
+                  <input
+                    className="mt-2 block w-full text-sm file:mr-4 file:rounded-xl file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-white file:font-medium"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(event) =>
+                      setFile(event.target.files?.[0] ?? null)
+                    }
+                  />
+                </label>
+                <div className="mt-2 text-xs text-zinc-500">
+                  Tip: on iPhone, this will prompt Camera or Photo Library.
+                </div>
+              </div>
+              <div className="rounded-2xl border border-zinc-200 bg-white/65 p-4">
+                <label className="text-sm font-medium text-zinc-800">
+                  Note (optional)
+                  <textarea
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    placeholder="Add a caption or memory..."
+                    rows={3}
+                    className="mt-2 block w-full rounded-xl border border-zinc-200 bg-white/70 px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-zinc-900/15 resize-y"
+                  />
+                </label>
+              </div>
 
-            <button
-              type="submit"
-              disabled={!file || state.kind === "uploading"}
-              className="h-11 rounded-xl bg-zinc-900 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-800 active:bg-zinc-950"
-            >
-              {state.kind === "uploading" ? "Uploading…" : "Upload to fridge"}
-            </button>
+              {state.kind === "error" ? (
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {state.message}
+                </div>
+              ) : null}
 
-            <a
-              href="/"
-              className="h-11 rounded-xl border border-zinc-200 bg-white/70 font-medium text-zinc-900 grid place-items-center hover:bg-white"
-            >
-              Back to fridge
-            </a>
-          </form>
+              <button
+                type="submit"
+                disabled={!name.trim() || !file || state.kind === "uploading"}
+                className="h-11 rounded-xl bg-zinc-900 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-800 active:bg-zinc-950"
+              >
+                {state.kind === "uploading" ? "Uploading…" : "Upload to fridge"}
+              </button>
+
+              <a
+                href="/"
+                className="h-11 rounded-xl border border-zinc-200 bg-white/70 font-medium text-zinc-900 grid place-items-center hover:bg-white"
+              >
+                Back to fridge
+              </a>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+    </PasswordGate>
   );
 }
