@@ -241,11 +241,6 @@ export function FridgeWall({ photos }: FridgeWallProps) {
             </div>
           </div>
         </div>
-
-        <div className="mt-6 text-center text-xs text-zinc-500">
-          Tip: print a QR code to{" "}
-          <span className="font-mono text-zinc-700">/upload</span> for guests.
-        </div>
       </div>
 
       {lightboxIndex !== null && (
