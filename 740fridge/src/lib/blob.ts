@@ -2,7 +2,20 @@ import { list, put } from "@vercel/blob";
 import { parseUploadedAtMsFromKey, type FridgePhoto } from "@/lib/photos";
 
 const UPLOAD_PREFIX = "uploads/";
-const METADATA_PATH = "uploads/_metadata.json";
+const META_PREFIX = `${UPLOAD_PREFIX}meta/`;
+
+/** Canonical key for metadata lookups (strip leading slash if present). */
+function normalizeKey(key: string): string {
+  return key.replace(/^\/+/, "");
+}
+
+function getMetadataKey(photoKey: string): string {
+  const canonical = normalizeKey(photoKey);
+  const withoutPrefix = canonical.startsWith(UPLOAD_PREFIX)
+    ? canonical.slice(UPLOAD_PREFIX.length)
+    : canonical;
+  return `${META_PREFIX}${withoutPrefix}.json`;
+}
 
 export interface PhotoMetadataEntry {
   key: string;
@@ -16,9 +29,15 @@ export async function listFridgePhotos() {
   const metadataMap = await getMetadataMap(results.blobs);
 
   const photos: FridgePhoto[] = results.blobs
-    .filter((blob) => !blob.pathname.endsWith("_metadata.json"))
+    .filter((blob) => {
+      const path = normalizeKey(blob.pathname);
+      if (path.endsWith("_metadata.json")) return false;
+      if (path.startsWith(normalizeKey(META_PREFIX))) return false;
+      return true;
+    })
     .map((blob) => {
-      const meta = metadataMap[blob.pathname];
+      const canonicalKey = normalizeKey(blob.pathname);
+      const meta = metadataMap[canonicalKey];
       return {
         key: blob.pathname,
         url: blob.url,
@@ -35,43 +54,37 @@ export async function listFridgePhotos() {
 async function getMetadataMap(
   blobs: { pathname: string; url: string }[],
 ): Promise<Record<string, PhotoMetadataEntry>> {
-  const metaBlob = blobs.find((b) => b.pathname === METADATA_PATH);
-  if (!metaBlob) return {};
+  const map: Record<string, PhotoMetadataEntry> = {};
+  const metaBlobs = blobs.filter((blob) =>
+    normalizeKey(blob.pathname).startsWith(normalizeKey(META_PREFIX)),
+  );
 
-  try {
-    const res = await fetch(metaBlob.url);
-    if (!res.ok) return {};
-    const arr = (await res.json()) as PhotoMetadataEntry[];
-    const map: Record<string, PhotoMetadataEntry> = {};
-    for (const entry of arr) {
-      map[entry.key] = entry;
+  for (const blob of metaBlobs) {
+    try {
+      const res = await fetch(blob.url);
+      if (!res.ok) continue;
+      const entry = (await res.json()) as PhotoMetadataEntry;
+      if (entry?.key) {
+        map[normalizeKey(entry.key)] = entry;
+      }
+    } catch {
+      // ignore individual metadata failures
     }
-    return map;
-  } catch {
-    return {};
   }
+
+  return map;
 }
 
 export async function savePhotoMetadata(entry: PhotoMetadataEntry) {
-  const listResult = await list({ prefix: UPLOAD_PREFIX, limit: 1 });
-  const existingBlob = listResult.blobs.find(
-    (b) => b.pathname === METADATA_PATH,
-  );
-  let entries: PhotoMetadataEntry[] = [];
-  if (existingBlob) {
-    try {
-      const res = await fetch(existingBlob.url);
-      if (res.ok) entries = (await res.json()) as PhotoMetadataEntry[];
-    } catch {
-      // ignore
-    }
-  }
-  const index = entries.findIndex((e) => e.key === entry.key);
-  if (index >= 0) entries[index] = entry;
-  else entries.push(entry);
+  const canonicalKey = normalizeKey(entry.key);
+  const metadataKey = getMetadataKey(canonicalKey);
+  const payload: PhotoMetadataEntry = {
+    key: canonicalKey,
+    name: entry.name,
+    note: entry.note,
+  };
 
-  const json = JSON.stringify(entries);
-  await put(METADATA_PATH, json, {
+  await put(metadataKey, JSON.stringify(payload), {
     access: "public",
     contentType: "application/json",
     addRandomSuffix: false,
