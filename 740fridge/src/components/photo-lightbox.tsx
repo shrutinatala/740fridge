@@ -79,7 +79,7 @@ export function PhotoLightbox({
         <span className="text-3xl font-bold leading-none">×</span>
       </button>
 
-      <div className="flex flex-1 items-center justify-center gap-2 px-14 py-4">
+      <div className="flex flex-1 items-center justify-center gap-2 px-4 py-4 sm:px-14">
         {hasPrev ? (
           <button
             type="button"
@@ -115,7 +115,7 @@ export function PhotoLightbox({
             alt="Guest photo"
             width={1200}
             height={1200}
-            className="max-h-[70vh] w-auto max-w-full object-contain"
+            className="max-h-[82vh] w-auto max-w-full object-contain sm:max-h-[70vh]"
             sizes="100vw"
           />
         </div>
