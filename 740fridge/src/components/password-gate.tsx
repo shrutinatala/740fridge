@@ -21,7 +21,7 @@ export function PasswordGate({
 
   React.useEffect(() => {
     if (persistAuth) {
-      setHasAccess(window.localStorage.getItem(STORAGE_KEY) === "true");
+      setHasAccess(window.sessionStorage.getItem(STORAGE_KEY) === "true");
     }
   }, [persistAuth]);
 
@@ -32,7 +32,7 @@ export function PasswordGate({
     if (password !== APP_PASSWORD) return;
 
     if (persistAuth) {
-      window.localStorage.setItem(STORAGE_KEY, "true");
+      window.sessionStorage.setItem(STORAGE_KEY, "true");
     }
     setHasAccess(true);
   }
