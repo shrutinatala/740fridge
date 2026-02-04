@@ -33,7 +33,7 @@ export async function listFridgePhotos() {
 }
 
 async function getMetadataMap(
-  blobs: { pathname: string; url: string }[]
+  blobs: { pathname: string; url: string }[],
 ): Promise<Record<string, PhotoMetadataEntry>> {
   const metaBlob = blobs.find((b) => b.pathname === METADATA_PATH);
   if (!metaBlob) return {};
@@ -55,7 +55,7 @@ async function getMetadataMap(
 export async function savePhotoMetadata(entry: PhotoMetadataEntry) {
   const listResult = await list({ prefix: UPLOAD_PREFIX, limit: 1 });
   const existingBlob = listResult.blobs.find(
-    (b) => b.pathname === METADATA_PATH
+    (b) => b.pathname === METADATA_PATH,
   );
   let entries: PhotoMetadataEntry[] = [];
   if (existingBlob) {

@@ -25,10 +25,8 @@ body {
 /* Bright, minimal "fridge" texture: subtle speckle + soft vertical sheen. */
 .fridge-surface {
   background-color: var(--fridge-surface);
-  background-image: radial-gradient(
-      rgba(17, 24, 39, 0.035) 1px,
-      transparent 1px
-    ),
+  background-image:
+    radial-gradient(rgba(17, 24, 39, 0.035) 1px, transparent 1px),
     linear-gradient(
       90deg,
       rgba(17, 24, 39, 0.06),
@@ -36,8 +34,12 @@ body {
       rgba(255, 255, 255, 0) 72%,
       rgba(17, 24, 39, 0.04)
     );
-  background-size: 18px 18px, 100% 100%;
-  background-position: 0 0, 0 0;
+  background-size:
+    18px 18px,
+    100% 100%;
+  background-position:
+    0 0,
+    0 0;
 }
 
 .fridge-frame {

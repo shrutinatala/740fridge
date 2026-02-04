@@ -24,6 +24,72 @@ interface PlacedPrint {
   z: number;
 }
 
+/** Assumed aspect ratio for a typical horizontal photo (width / height). */
+const LANDSCAPE_ASPECT = 4 / 3;
+
+function FridgeImage({
+  print,
+  baseMagnetStyle,
+  magnetKind,
+  random,
+}: {
+  print: PlacedPrint;
+  baseMagnetStyle: CSSProperties;
+  magnetKind: "circle" | "star";
+  random: () => number;
+}) {
+  const [aspect, setAspect] = React.useState<number | null>(null);
+
+  const isPortrait = aspect !== null && aspect < 1;
+  // For a 4:3 horizontal image filling the column, height = width * 3/4.
+  // We want the portrait image width to equal that height, so 75% of column.
+  const portraitWidthPercent = (1 / LANDSCAPE_ASPECT) * 100; // 75
+
+  return (
+    <div
+      className="relative flex justify-center"
+      style={
+        isPortrait
+          ? { maxWidth: `${portraitWidthPercent}%`, margin: "0 auto" }
+          : undefined
+      }
+    >
+      <Image
+        src={print.url}
+        alt={print.alt}
+        width={800}
+        height={800}
+        sizes="(max-width: 640px) 50vw, 33vw"
+        className="h-auto w-full object-contain"
+        priority={print.row === 0 && print.col === 0}
+        onLoadingComplete={({ naturalWidth, naturalHeight }) => {
+          if (naturalWidth > 0 && naturalHeight > 0) {
+            setAspect(naturalWidth / naturalHeight);
+          }
+        }}
+      />
+
+      {magnetKind === "circle" && (
+        <CircleMagnet
+          style={
+            {
+              ...baseMagnetStyle,
+              ["--circle" as never]: pickOne(random, [
+                "#60A5FA",
+                "#F59E0B",
+                "#34D399",
+                "#F472B6",
+                "#A78BFA",
+              ]),
+            } as CSSProperties
+          }
+        />
+      )}
+      {magnetKind === "star" && <StarMagnet style={baseMagnetStyle} />}
+    </div>
+  );
+}
+
 function buildPrints(photos: FridgePhoto[]) {
   // One print per uploaded photo; we keep a small, organic rotation/offset
   // but do not duplicate the image.
@@ -66,7 +132,7 @@ function computeGridPlacement(prints: PlacedPrint[]) {
 export function FridgeWall({ photos }: FridgeWallProps) {
   const prints = React.useMemo(
     () => computeGridPlacement(buildPrints(photos)),
-    [photos]
+    [photos],
   );
   const [lightboxIndex, setLightboxIndex] = React.useState<number | null>(null);
 
@@ -163,37 +229,12 @@ export function FridgeWall({ photos }: FridgeWallProps) {
                     }}
                     aria-label="View photo"
                   >
-                    <div className="relative">
-                      <Image
-                        src={print.url}
-                        alt={print.alt}
-                        width={800}
-                        height={800}
-                        sizes="(max-width: 640px) 50vw, 33vw"
-                        className="h-auto w-full object-contain"
-                        priority={print.row === 0 && print.col === 0}
-                      />
-
-                      {magnetKind === "circle" && (
-                        <CircleMagnet
-                          style={
-                            {
-                              ...baseMagnetStyle,
-                              ["--circle" as never]: pickOne(random, [
-                                "#60A5FA",
-                                "#F59E0B",
-                                "#34D399",
-                                "#F472B6",
-                                "#A78BFA",
-                              ]),
-                            } as CSSProperties
-                          }
-                        />
-                      )}
-                      {magnetKind === "star" && (
-                        <StarMagnet style={baseMagnetStyle} />
-                      )}
-                    </div>
+                    <FridgeImage
+                      print={print}
+                      baseMagnetStyle={baseMagnetStyle}
+                      magnetKind={magnetKind}
+                      random={random}
+                    />
                   </div>
                 );
               })}
